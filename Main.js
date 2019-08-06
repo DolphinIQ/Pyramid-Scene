@@ -125,6 +125,7 @@ let createFloor = function(){
 			// map: Textures.noise1,
 			bumpMap: Textures.noise2,
 			// depthWrite: false,
+			transparent: true,
 		})
 	);
 	
@@ -140,12 +141,11 @@ let createFloor = function(){
 		shader.uniforms.CR1max = { value: 0.66 };
 		shader.uniforms.CR2min = { value: 0.5 };
 		shader.uniforms.CR2max = { value: 0.9 };
-		
-		// shader.uniforms.uvOffsetX = { value: 0.0 };
-		// shader.uniforms.uvOffsetY = { value: 0.0 };
+		shader.uniforms.uNoiseOpacity = { value: 0.1 };
 		
 		shader.uniforms.uReflectionRT = { value: null };
 		
+		gui.add( shader.uniforms.uNoiseOpacity, "value", 0.0, 1.0, 0.02 ).name("Noise Opacity");
 		/* let shaderFolder = gui.addFolder( 'Shader' );
 		shaderFolder.open();
 		shaderFolder.add( shader.uniforms.CR1min, 'value', 0.0, 1.0, 0.02).name('CR1 min');
@@ -163,9 +163,7 @@ let createFloor = function(){
 			uniform float CR1max;
 			uniform float CR2min;
 			uniform float CR2max;
-			
-			// uniform float uvOffsetX;
-			// uniform float uvOffsetY;
+			uniform float uNoiseOpacity;
 			
 			uniform sampler2D uReflectionRT;
 			
@@ -253,6 +251,7 @@ let createPyramid = function(){
 	glowEffect.scale.set( 50 , 50 , 1 );
 	scene0.add( glowEffect );
 	glowEffect.position.set( 3.5 , 1.5 , -10 );
+	glowEffect.renderOrder = 0.1;
 	
 	let pyrGlowFolder = gui.addFolder( 'Pyramid Glow' );
 	// pyrGlowFolder.open();
@@ -305,6 +304,8 @@ let initTextures = function(){
 	Textures.noise2.wrapS = THREE.RepeatWrapping;
 	Textures.noise2.wrapT = THREE.RepeatWrapping;
 	Textures.noise2.repeat.set( 2 , 2 ); // 2 2
+	gui.add( Textures.noise2.repeat, "x" , 0 , 16 );
+	gui.add( Textures.noise2.repeat, "y" , 0 , 16 );
 	console.log( Textures.noise2 );
 	Textures.noise2.anisotropy = renderer.capabilities.getMaxAnisotropy();
 	
@@ -333,7 +334,7 @@ let initPostProcessing = function(){
 	// resolution, strength, radius, threshold
 	let unrealBloomPass = new THREE.UnrealBloomPass( 
 		new THREE.Vector2( 256 , 256 ),
-		3.5, 1.0 , 0.55
+		4.5, 1.0 , 0.55
 	);
 	// unrealBloomPass.enabled = false;
 	unrealBloomPass.exposure = 1.0;
@@ -385,6 +386,7 @@ let initLights = function(){
 		Lights[2].shadow.bias = shadowSetting.bias;
 	}
 	let pHelper = new pLightHelper( 0xFF2200 , 90.0 );
+	pHelper.renderOrder = 0.1;
 	Lights[2].add( pHelper );
 	
 	let orangeLightFolder = gui.addFolder( 'OrangeLight' );
@@ -437,9 +439,9 @@ function animate() {
 	time += 1/60;
 	if( floor.userData.shader ) floor.userData.shader.uniforms.uTime.value = time;
 	
-	pyramid.rotation.y += 0.005; // 0.0005
-	pyramid2.rotation.y -= 0.005;
-	// pyramid.material.uniforms.uTime.value = time;
+	pyramid.rotation.y += 0.0005; // 0.0005
+	pyramid2.rotation.y -= 0.0005;
+	pyramid.material.uniforms.uTime.value = time;
 	
 	/* renderer.setRenderTarget( reflectionRenderTarget );
 	if( floor.userData.shader ) floor.userData.shader.uniforms.uReflectionRT.value = null;

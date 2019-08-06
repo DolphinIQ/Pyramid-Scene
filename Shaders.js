@@ -13,6 +13,8 @@ let myChunks = {
 		
 		// vec4 reflectionTxt = texture2D( uReflectionRT , vUv * vec2( 1.0 , -1.0 ) );
 		// diffuseColor += reflectionTxt * ( 1.0 - roughnessFactor );
+		
+		if( roughnessFactor == 0.0 ) diffuseColor.a = uNoiseOpacity;
 	`,
 	
 	adjusted_bumpmap_pars_fragment: `
@@ -101,7 +103,7 @@ let myChunks = {
 			void main(){
 				vec2 uv = vUv;
 				uv.x *= 10.0;
-				uv.y = uv.y * 3.0 - uTime*0.1;
+				uv.y = uv.y * 3.0 - uTime*0.2;
 				
 				vec3 outputColor = diffuse;
 				
