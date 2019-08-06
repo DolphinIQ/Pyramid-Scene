@@ -13,19 +13,17 @@ let shadowSetting = {
 	ON: true,
 	bias: 0.0005,
 };
-let time = 0, floor, pyramid;
+let time = 0, floor, pyramid, pyramid2;
 let reflectionCamera, reflectionRenderTarget, reflectionRenderer, myPass;
 let floorSize = new THREE.Vector2( 50 , 50 );
 
 
 function init() {
 	// Renderer
-	// let context = canvas.getContext( 'webgl2' );
 	renderer = new THREE.WebGLRenderer({ 
 		canvas: canvas, 
-		// context: context, 
 		// antialias: true, 
-		// powerPreference: "high-performance",
+		powerPreference: "high-performance",
 	});
 	renderer.setSize( window.innerWidth, window.innerHeight );
 	if(shadowSetting.ON){ 
@@ -39,10 +37,12 @@ function init() {
 	
 	// Scene
 	scene0 = new THREE.Scene();
-	scene0.background = new THREE.Color( 0x000000 );
+	scene0.background = new THREE.Color( 0x050505 );
+	// scene0.fog = new THREE.FogExp2( 0x202020 , 0.025 );
+	scene0.fog = new THREE.Fog( 0x050505 , 15 , 30 );
 	
 	// Camera
-	camera0 = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 0.1, 1000 );
+	camera0 = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 0.1, 100 );
 	camera0.position.copy( camPos );
 	
 	// Clock
@@ -91,8 +91,8 @@ let createStartingMesh = function(){
 		cube.castShadow = true;
 		cube.receiveShadow = true;
 	}
-	cube.position.set( 1.2 , 0.9 , 5 );
-	scene0.add( cube );
+	cube.position.set( 1.5 , 0.9 , 5 );
+	// scene0.add( cube );
 	
 	setupReflectionRender();
 	createFloor();
@@ -100,20 +100,7 @@ let createStartingMesh = function(){
 	createPyramid();
 }
 
-let setupReflectionRender = function(){
-	
-	/* reflectionRenderer = new THREE.WebGLRenderer({ 
-		// canvas: canvas, 
-		context: canvas.getContext( 'webgl2' ),
-		// antialias: true, 
-		// powerPreference: "high-performance",
-	});
-	reflectionRenderer.setRenderTarget( reflectionRenderTarget );
-	reflectionRenderer.gammaOutput = true;
-	reflectionRenderer.gammaFactor = 2.2;
-	reflectionRenderer.physicallyCorrectLights = true; */
-	
-	
+let setupReflectionRender = function(){		
 	
 	reflectionCamera = new THREE.OrthographicCamera( -floorSize.x/2, floorSize.x/2, floorSize.y/2, -floorSize.y/2, 0.0, 20 );
 	scene0.add( reflectionCamera );
@@ -122,10 +109,8 @@ let setupReflectionRender = function(){
 	reflectionRenderTarget = new THREE.WebGLRenderTarget( 256 , 256 , {} );
 	reflectionRenderTarget.texture.wrapS = THREE.RepeatWrapping;
 	reflectionRenderTarget.texture.wrapT = THREE.RepeatWrapping;
-	console.log( reflectionRenderTarget );
+	// console.log( reflectionRenderTarget );
 	
-	let camHelper = new THREE.CameraHelper( reflectionCamera );
-	// scene0.add( camHelper );
 }
 
 let createFloor = function(){
@@ -136,9 +121,10 @@ let createFloor = function(){
 			color: 0x2642D9,
 			// color: 0x051680,
 			// roughness: 1.0,
-			metalness: 0,
+			metalness: 0.0,
 			// map: Textures.noise1,
 			bumpMap: Textures.noise2,
+			// depthWrite: false,
 		})
 	);
 	
@@ -232,10 +218,19 @@ let createPyramid = function(){
 		
 		flatShading: true,
 	});
+	let normalMat = new THREE.MeshNormalMaterial({  });
+	
 	pyramid = new THREE.Mesh( pyramidGeo , pyramidMat );
-	pyramid.position.set( 2 , 2.5 , -8 ); // z: -10
-	pyramid.rotation.y += 45 * Math.PI/180;
+	pyramid.position.set( 2 , 2.5 , -8 );
+	pyramid.rotation.y += 55 * Math.PI/180;
 	scene0.add( pyramid );
+	
+	pyramid2 = new THREE.Mesh( pyramidGeo , pyramidMat );
+	pyramid2.position.set( 2 , -2.5 , -8 );
+	pyramid2.rotation.y -= 55 * Math.PI/180;
+	pyramid2.rotation.x += 180 * Math.PI/180;
+	scene0.add( pyramid2 );
+	
 	
 	/* let pyramidFolder = gui.addFolder( 'Pyramid' );
 	pyramidFolder.open();
@@ -251,11 +246,23 @@ let createPyramid = function(){
 		map: Textures.glow,
 		color: new THREE.Color( 0.0 , 0.9 , 1.0 ),
 		blending: THREE.AdditiveBlending,
-		opacity: 0.7,
+		opacity: 0.15,
+		fog: false,
+		// lights: false,
 	}) );
-	glowEffect.scale.set( 15 , 15 , 1 );
-	// scene0.add( glowEffect );
-	glowEffect.position.set( 1 , 3.5 , -6 );
+	glowEffect.scale.set( 50 , 50 , 1 );
+	scene0.add( glowEffect );
+	glowEffect.position.set( 3.5 , 1.5 , -10 );
+	
+	let pyrGlowFolder = gui.addFolder( 'Pyramid Glow' );
+	// pyrGlowFolder.open();
+	pyrGlowFolder.add( glowEffect.position , 'x' , -2.0 , 20.0 , 0.1 );
+	pyrGlowFolder.add( glowEffect.position , 'y' , -1.0 , 10.0 , 0.1 );
+	pyrGlowFolder.add( glowEffect.position , 'z' , -40.0 , 10.0 , 0.1 );
+	pyrGlowFolder.add( glowEffect.material , 'opacity' , 0.0 , 1.0 , 0.01 );
+	pyrGlowFolder.add( glowEffect.scale , 'x' , 10.0 , 200.0 , 0.1 ).name("scale").onChange( function( value ){
+		glowEffect.scale.set( value , value , value );
+	} );
 	
 }
 
@@ -306,16 +313,12 @@ let initTextures = function(){
 	Textures.voronoi.wrapT = THREE.RepeatWrapping;
 	
 	
-	Textures.glow = textureLoader.load( 'RoundSoftParticle.png' );
+	Textures.glowOld = textureLoader.load( 'RoundSoftParticle.png' );
+	Textures.glow = textureLoader.load( 'RoundSoftParticleHalved.png' );
 	
 }
 
 let initPostProcessing = function(){
-	
-	let parameters = {
-		format: THREE.RGBFormat,
-	};
-	// let renderTarget = new THREE.WebGLMultisampleRenderTarget( canvas.width, canvas.height, parameters );
 	
 	composer = new THREE.EffectComposer( renderer );
 	renderer.info.autoReset = false;
@@ -326,13 +329,11 @@ let initPostProcessing = function(){
 	
 	myPass = new THREE.ShaderPass( myChunks.myShaderPass );
 	myPass.uniforms.uReflectionRT = { value: null };
-	// let edgePass = new THREE.ShaderPass( edgeShader );
-	// edgePass.uniforms.uSize.value = new THREE.Vector2( canvas.width , canvas.height );
 	
 	// resolution, strength, radius, threshold
 	let unrealBloomPass = new THREE.UnrealBloomPass( 
 		new THREE.Vector2( 256 , 256 ),
-		4.0, 1.0 , 0.6
+		3.5, 1.0 , 0.55
 	);
 	// unrealBloomPass.enabled = false;
 	unrealBloomPass.exposure = 1.0;
@@ -377,8 +378,8 @@ let initLights = function(){
 	pLightFolder.add( Lights[1] , 'distance' , 0.0 , 100.0 , 0.01 );
 	
 	// ORANGE LIGHT
-	Lights[2] = new THREE.PointLight( 0xFF2200 , 300 , 15.0 , 2 );
-	Lights[2].position.set( -11 , 1.5 , -3.0 );
+	Lights[2] = new THREE.PointLight( 0xFF2200 , 100 , 15.5 , 2 );
+	Lights[2].position.set( -12 , 1.5 , -3.0 );
 	if( shadowSetting.ON ){ 
 		Lights[2].castShadow = true;
 		Lights[2].shadow.bias = shadowSetting.bias;
@@ -387,21 +388,22 @@ let initLights = function(){
 	Lights[2].add( pHelper );
 	
 	let orangeLightFolder = gui.addFolder( 'OrangeLight' );
-	orangeLightFolder.open();
+	// orangeLightFolder.open();
 	orangeLightFolder.add( Lights[2].position , 'x' , -30.0 , 0.0 , 0.1 );
 	orangeLightFolder.add( Lights[2].position , 'y' , -1.0 , 10.0 , 0.1 );
 	orangeLightFolder.add( Lights[2].position , 'z' , -30.0 , 10.0 , 0.1 );
 	orangeLightFolder.add( Lights[2] , 'intensity' , 0.0 , 500.0 , 0.5 );
-	orangeLightFolder.add( Lights[2] , 'distance' , 0.0 , 50.0 , 0.01 );
+	orangeLightFolder.add( Lights[2] , 'distance' , 0.0 , 30.0 , 0.01 );
 	
 	orangeLightFolder.add( pHelper.position , 'x' , -30.0 , 0.0 , 0.1 );
 	orangeLightFolder.add( pHelper.position , 'y' , -1.0 , 10.0 , 0.1 );
 	orangeLightFolder.add( pHelper.position , 'z' , -30.0 , 10.0 , 0.1 );
+	orangeLightFolder.add( pHelper.material , 'opacity' , 0.0 , 1.0 , 0.01 );
 	orangeLightFolder.add( pHelper.scale , 'x' , 10.0 , 200.0 , 0.1 ).name("scale").onChange( function( value ){
 		pHelper.scale.set( value , value , value );
 	} );
 	
-	pHelper.position.set( -15.5 , 0 , -3.0 );
+	pHelper.position.set( -15.5 , 0.9 , -3.0 );
 	
 	
 	for(let i = 0; i < Lights.length; i++){
@@ -410,15 +412,12 @@ let initLights = function(){
 }
 
 function pLightHelper( color , radius ){
-	/* let obj = new THREE.Mesh( 
-		new THREE.SphereBufferGeometry( radius , 32 , 32 ),
-		new THREE.MeshBasicMaterial({ color: color })
-	); */
 	
 	let obj = new THREE.Sprite( new THREE.SpriteMaterial({
 		map: Textures.glow,
 		color: color,
 		opacity: 0.7,
+		fog: false,
 	}) );
 	obj.scale.set( 1.0 + radius , 1.0 + radius );
 	
@@ -438,25 +437,26 @@ function animate() {
 	time += 1/60;
 	if( floor.userData.shader ) floor.userData.shader.uniforms.uTime.value = time;
 	
-	pyramid.rotation.y += 0.0005;
-	pyramid.material.uniforms.uTime.value = time;
+	pyramid.rotation.y += 0.005; // 0.0005
+	pyramid2.rotation.y -= 0.005;
+	// pyramid.material.uniforms.uTime.value = time;
 	
-	renderer.setRenderTarget( reflectionRenderTarget );
+	/* renderer.setRenderTarget( reflectionRenderTarget );
 	if( floor.userData.shader ) floor.userData.shader.uniforms.uReflectionRT.value = null;
 	renderer.render( scene0 , reflectionCamera );
-	if( floor.userData.shader ) floor.userData.shader.uniforms.uReflectionRT.value = reflectionRenderTarget.texture;
+	if( floor.userData.shader ) floor.userData.shader.uniforms.uReflectionRT.value = reflectionRenderTarget.texture; */
 	
 	
 	composer.render( scene0 , camera0 );
 	stats.end();
 }
 
-/* if ( WEBGL.isWebGL2Available() === false ) {
+if ( WEBGL.isWebGLAvailable() === false ) {
 		
-	document.body.appendChild( WEBGL.getWebGL2ErrorMessage() );
-	console.error("WEBGL 2 NOT SUPPORTED");
-} else { */
+	document.body.appendChild( WEBGL.getWebGLErrorMessage() );
+	console.error("WEBGL IS NOT SUPPORTED");
+} else {
 	
 	init();
 	requestAnimationFrame( animate );
-// }
+}
