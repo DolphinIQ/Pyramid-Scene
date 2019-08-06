@@ -15,6 +15,7 @@ let myChunks = {
 		// diffuseColor += reflectionTxt * ( 1.0 - roughnessFactor );
 		
 		if( roughnessFactor == 0.0 ) diffuseColor.a = uNoiseOpacity;
+		else if( roughnessFactor <= 0.01 ) diffuseColor.a = uNoiseOpacity + 0.2;
 	`,
 	
 	adjusted_bumpmap_pars_fragment: `
@@ -117,6 +118,9 @@ let myChunks = {
 				float emissionFactor = mix( emissionFactorVoronoi , emissionFactorPerlin , uTxtMix + sin( uTime )*0.1 );
 				
 				emissionFactor = clamp( (emissionFactor - CR3min)/(CR3max - CR3min) , 0.0, 1.0 );
+				
+				// float wireframeEmission = abs( vUv.x*1.0 - 1.0 ) * 0.5;
+				// emissionFactor += wireframeEmission;
 				
 				outputColor += emissionFactor * emissive;
 				

@@ -6,14 +6,14 @@ THREE.js r106
 let canvas = document.getElementById("myCanvas");
 let camera0, scene0, renderer, composer, clock, stats, gui;
 let controls, mousePos = {}, camPos = new THREE.Vector3( 0 , 1.5 , 8 );
-let textureLoader;
+let textureLoader, gltfLoader;
 let Textures = {};
 let Lights = [];
-let shadowSetting = {
+let shadowSettings = {
 	ON: true,
 	bias: 0.0005,
 };
-let time = 0, floor, pyramid, pyramid2;
+let time = 0, floor, pyramid, pyramid2, character;
 let reflectionCamera, reflectionRenderTarget, reflectionRenderer, myPass;
 let floorSize = new THREE.Vector2( 50 , 50 );
 
@@ -26,7 +26,7 @@ function init() {
 		powerPreference: "high-performance",
 	});
 	renderer.setSize( window.innerWidth, window.innerHeight );
-	if(shadowSetting.ON){ 
+	if(shadowSettings.ON){ 
 		renderer.shadowMap.enabled = true;
 		renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 		renderer.shadowMap.autoUpdate = false;
@@ -58,6 +58,7 @@ function init() {
 	
 	// Loaders
 	textureLoader = new THREE.TextureLoader();
+	gltfLoader = new THREE.GLTFLoader();
 
 	// Resize Event
 	window.addEventListener("resize", function(){
@@ -74,7 +75,7 @@ function init() {
 	createStartingMesh();
 	initPostProcessing();
 	
-	if( shadowSetting.ON ) renderer.shadowMap.needsUpdate = true;
+	if( shadowSettings.ON ) renderer.shadowMap.needsUpdate = true;
 	
 	setInterval( function(  ){
 		console.log( renderer.info.render.calls );
@@ -84,20 +85,75 @@ function init() {
 let createStartingMesh = function(){
 	
 	let cube = new THREE.Mesh( 
-		new THREE.BoxGeometry( 0.8 , 1.8 , 0.8 ) , 
-		new THREE.MeshStandardMaterial({color: 0x202020 , roughness: 0.7 , metalness: 0 })
+		new THREE.BoxBufferGeometry( 0.8 , 1.8 , 0.8 ) , 
+		new THREE.MeshStandardMaterial({color: 0x202020 , roughness: 0.7 , metalness: 0, bumpMap: Textures.noise2 })
 	);
-	if(shadowSetting.ON) {
+	if(shadowSettings.ON) {
 		cube.castShadow = true;
 		cube.receiveShadow = true;
 	}
 	cube.position.set( 1.5 , 0.9 , 5 );
 	// scene0.add( cube );
 	
-	setupReflectionRender();
-	createFloor();
+	/* cube.material.onBeforeCompile = function(shader){
+		
+		shader.fragmentShader = shader.fragmentShader.replace( 
+			"gl_FragColor = vec4( outgoingLight, diffuseColor.a );" ,`
+			
+			float wireframeEmission = abs( vUv.x - 1.0 );
+			// float wireframeEmission = vUv.x/2.;
+			outgoingLight = vec3( wireframeEmission );
+			gl_FragColor = vec4( outgoingLight, diffuseColor.a );
+		`);
+	} */
 	
+	loadCharacter();
+	// setupReflectionRender();
+	createFloor();
 	createPyramid();
+}
+
+let loadCharacter = function(){
+	
+	gltfLoader.load( 'character.glb' , function( gltf ){
+		
+		console.log( gltf );
+		character = gltf.scene;
+		
+		character.position.set( 2.0 , -0.02 , 5.5 );
+		character.rotation.y = 3.0; // 3.5
+		
+		if( shadowSettings.ON ){
+			// character.children[0].children[1]
+			character.children[0].children[1].castShadow = true;
+			character.children[0].children[1].receiveShadow = true;
+			renderer.shadowMap.needsUpdate = true;
+		}
+		
+		character.animationMixer = new THREE.AnimationMixer( character );
+		character.animations = {
+			idle: character.animationMixer.clipAction( gltf.animations[0] ),
+		};
+		character.animations.idle.play();
+		character.playingAnimation = true;
+		
+		
+		let characterFolder = gui.addFolder( "Character" );
+		characterFolder.open();
+		/* characterFolder.add( character.position , "x" , -10 , 10 , 0.1 );
+		characterFolder.add( character.position , "y" , -1 , 1 , 0.01 ).onChange( function(){ renderer.shadowMap.needsUpdate = true; } );
+		characterFolder.add( character.position , "z" , -5 , 15 , 0.1 );
+		characterFolder.add( character.scale , "x" , 0 , 3 , 0.1 );
+		characterFolder.add( character.scale , "y" , 0 , 3 , 0.1 );
+		characterFolder.add( character.scale , "z" , 0 , 3 , 0.1 );
+		characterFolder.add( character.rotation , "y" , 0 , 6.3 , 0.001 ); */
+		characterFolder.add( character, "playingAnimation" ).onChange( function(v){
+			if( v == true ) character.animations.idle.play();
+			else character.animations.idle.stop();
+		});
+		
+		scene0.add( character );
+	} );
 }
 
 let setupReflectionRender = function(){		
@@ -131,7 +187,7 @@ let createFloor = function(){
 	
 	floor.rotation.x -= 90 * Math.PI/180;
 	scene0.add( floor );
-	if(shadowSetting.ON) floor.receiveShadow = true;
+	if(shadowSettings.ON) floor.receiveShadow = true;
 	
 	floor.material.onBeforeCompile = function( shader ){
 		
@@ -215,6 +271,7 @@ let createPyramid = function(){
 		fragmentShader: myChunks.my_emission_shader.fragment,
 		
 		flatShading: true,
+		transparent: true,
 	});
 	let normalMat = new THREE.MeshNormalMaterial({  });
 	
@@ -303,10 +360,9 @@ let initTextures = function(){
 	Textures.noise2 = textureLoader.load( 'noiseTexture2.png' );
 	Textures.noise2.wrapS = THREE.RepeatWrapping;
 	Textures.noise2.wrapT = THREE.RepeatWrapping;
-	Textures.noise2.repeat.set( 2 , 2 ); // 2 2
-	gui.add( Textures.noise2.repeat, "x" , 0 , 16 );
-	gui.add( Textures.noise2.repeat, "y" , 0 , 16 );
-	console.log( Textures.noise2 );
+	Textures.noise2.repeat.set( 1.85 , 2.12 ); // 2 2
+	gui.add( Textures.noise2.repeat, "x" , 0 , 16 , 0.01 );
+	gui.add( Textures.noise2.repeat, "y" , 0 , 16 , 0.01 );
 	Textures.noise2.anisotropy = renderer.capabilities.getMaxAnisotropy();
 	
 	Textures.voronoi = textureLoader.load( 'voronoi.jpg' );
@@ -364,11 +420,11 @@ let initLights = function(){
 	// Lights[0].position.set( 1 , 2 , 2 );
 	
 	// PYRAMID LIGHT
-	Lights[1] = new THREE.PointLight( 0xaaeeff , 13 , 0 , 2 );
+	Lights[1] = new THREE.PointLight( 0xaaeeff , 50 , 0 , 2 ); // int 13
 	Lights[1].position.set( 2 , 1.5 , -8 );
-	if( shadowSetting.ON ){ 
+	if( shadowSettings.ON ){ 
 		Lights[1].castShadow = true;
-		Lights[1].shadow.bias = shadowSetting.bias;
+		Lights[1].shadow.bias = shadowSettings.bias;
 	}
 	
 	let pLightFolder = gui.addFolder( 'pLight' );
@@ -379,12 +435,12 @@ let initLights = function(){
 	pLightFolder.add( Lights[1] , 'distance' , 0.0 , 100.0 , 0.01 );
 	
 	// ORANGE LIGHT
-	Lights[2] = new THREE.PointLight( 0xFF2200 , 100 , 15.5 , 2 );
+	Lights[2] = new THREE.PointLight( 0xFF2200 , 100 , 16 , 2 ); // 15.5 dist
 	Lights[2].position.set( -12 , 1.5 , -3.0 );
-	if( shadowSetting.ON ){ 
+	/* if( shadowSettings.ON ){ 
 		Lights[2].castShadow = true;
-		Lights[2].shadow.bias = shadowSetting.bias;
-	}
+		Lights[2].shadow.bias = shadowSettings.bias;
+	} */
 	let pHelper = new pLightHelper( 0xFF2200 , 90.0 );
 	pHelper.renderOrder = 0.1;
 	Lights[2].add( pHelper );
@@ -442,6 +498,8 @@ function animate() {
 	pyramid.rotation.y += 0.0005; // 0.0005
 	pyramid2.rotation.y -= 0.0005;
 	pyramid.material.uniforms.uTime.value = time;
+	
+	if( character instanceof THREE.Scene ) character.animationMixer.update( delta );
 	
 	/* renderer.setRenderTarget( reflectionRenderTarget );
 	if( floor.userData.shader ) floor.userData.shader.uniforms.uReflectionRT.value = null;
