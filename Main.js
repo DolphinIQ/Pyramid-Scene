@@ -2,6 +2,27 @@
 THREE.js r106 
 */
 
+// UTILITY
+import Stats from './node_modules/three/examples/jsm/libs/stats.module.js';
+import { GUI } from './node_modules/three/examples/jsm/libs/dat.gui.module.js';
+import { WEBGL } from './node_modules/three/examples/jsm/WebGL.js';
+
+// THREE
+import * as THREE from './node_modules/three/build/three.module.js';
+import { OrbitControls } from './node_modules/three/examples/jsm/controls/OrbitControls.js';
+import { GLTFLoader } from './node_modules/three/examples/jsm/loaders/GLTFLoader.js';
+
+// POST PROCESSING
+import { EffectComposer } from './node_modules/three/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from './node_modules/three/examples/jsm/postprocessing/RenderPass.js';
+import { FXAAShader } from './node_modules/three/examples/jsm/shaders/FXAAShader.js';
+import { ShaderPass } from "./node_modules/three/examples/jsm/postprocessing/ShaderPass.js";
+import { UnrealBloomPass } from './node_modules/three/examples/jsm/postprocessing/UnrealBloomPass.js';
+
+// MY FILES
+import { myChunks } from './Shaders.js';
+
+
 // Global Variables
 let canvas = document.getElementById("myCanvas");
 let camera0, scene0, renderer, composer, clock, stats, gui;
@@ -53,12 +74,12 @@ function init() {
 	document.body.appendChild( stats.dom );
 	
 	//GUI
-	gui = new dat.GUI();
+	gui = new GUI();
 	// gui.add(object, property, [min], [max], [step])
 	
 	// Loaders
 	textureLoader = new THREE.TextureLoader();
-	gltfLoader = new THREE.GLTFLoader();
+	gltfLoader = new GLTFLoader();
 
 	// Resize Event
 	window.addEventListener("resize", function(){
@@ -138,19 +159,19 @@ let loadCharacter = function(){
 		character.playingAnimation = true;
 		
 		
-		let characterFolder = gui.addFolder( "Character" );
+		/* let characterFolder = gui.addFolder( "Character" );
 		characterFolder.open();
-		/* characterFolder.add( character.position , "x" , -10 , 10 , 0.1 );
+		characterFolder.add( character.position , "x" , -10 , 10 , 0.1 );
 		characterFolder.add( character.position , "y" , -1 , 1 , 0.01 ).onChange( function(){ renderer.shadowMap.needsUpdate = true; } );
 		characterFolder.add( character.position , "z" , -5 , 15 , 0.1 );
 		characterFolder.add( character.scale , "x" , 0 , 3 , 0.1 );
 		characterFolder.add( character.scale , "y" , 0 , 3 , 0.1 );
 		characterFolder.add( character.scale , "z" , 0 , 3 , 0.1 );
-		characterFolder.add( character.rotation , "y" , 0 , 6.3 , 0.001 ); */
+		characterFolder.add( character.rotation , "y" , 0 , 6.3 , 0.001 );
 		characterFolder.add( character, "playingAnimation" ).onChange( function(v){
 			if( v == true ) character.animations.idle.play();
 			else character.animations.idle.stop();
-		});
+		}); */
 		
 		scene0.add( character );
 	} );
@@ -377,18 +398,15 @@ let initTextures = function(){
 
 let initPostProcessing = function(){
 	
-	composer = new THREE.EffectComposer( renderer );
+	composer = new EffectComposer( renderer );
 	renderer.info.autoReset = false;
 	
 	// Passes
-	let renderPass = new THREE.RenderPass( scene0, camera0 );
-	let fxaaPass = new THREE.ShaderPass( THREE.FXAAShader );
-	
-	myPass = new THREE.ShaderPass( myChunks.myShaderPass );
-	myPass.uniforms.uReflectionRT = { value: null };
+	let renderPass = new RenderPass( scene0, camera0 );
+	let fxaaPass = new ShaderPass( FXAAShader );
 	
 	// resolution, strength, radius, threshold
-	let unrealBloomPass = new THREE.UnrealBloomPass( 
+	let unrealBloomPass = new UnrealBloomPass( 
 		new THREE.Vector2( 256 , 256 ),
 		4.5, 1.0 , 0.55
 	);
@@ -396,10 +414,12 @@ let initPostProcessing = function(){
 	unrealBloomPass.exposure = 1.0;
 	
 	let bloomFolder = gui.addFolder( 'Bloom Pass' );
-	// bloomFolder.open();
+	bloomFolder.open();
 	bloomFolder.add( unrealBloomPass, 'exposure', 0.0, 2.0 , 0.1 )
 	.onChange( function ( value ) {
-		renderer.toneMappingExposure = Math.pow( value, 4.0 );
+		// renderer.toneMappingExposure = Math.pow( value, 4.0 );
+		renderer.toneMappingExposure = value;
+		console.log( renderer.toneMappingExposure );
 	} );
 	bloomFolder.add( unrealBloomPass , 'strength' , 0.0 , 10.0 , 0.05 );
 	bloomFolder.add( unrealBloomPass , 'radius' , 0.0 , 1.0 , 0.01 );
@@ -410,8 +430,7 @@ let initPostProcessing = function(){
 	composer.addPass( unrealBloomPass );
 	composer.addPass( fxaaPass );
 	
-	// composer.addPass( myPass );
-	
+	gui.add( fxaaPass , 'enabled' ).name("FXAAPass");
 }
 
 let initLights = function(){
@@ -495,8 +514,8 @@ function animate() {
 	time += 1/60;
 	if( floor.userData.shader ) floor.userData.shader.uniforms.uTime.value = time;
 	
-	pyramid.rotation.y += 0.0005; // 0.0005
-	pyramid2.rotation.y -= 0.0005;
+	pyramid.rotation.y += 0.0007; // 0.0005
+	pyramid2.rotation.y -= 0.0007;
 	pyramid.material.uniforms.uTime.value = time;
 	
 	if( character instanceof THREE.Scene ) character.animationMixer.update( delta );

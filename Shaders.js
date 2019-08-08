@@ -163,4 +163,6 @@ let myChunks = {
 	
 };
 
+export { myChunks };
+
 
