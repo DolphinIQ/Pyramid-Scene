@@ -3,21 +3,21 @@ THREE.js r106
 */
 
 // UTILITY
-import Stats from './node_modules/three/examples/jsm/libs/stats.module.js';
-import { GUI } from './node_modules/three/examples/jsm/libs/dat.gui.module.js';
-import { WEBGL } from './node_modules/three/examples/jsm/WebGL.js';
+import Stats from '../../node_modules/three/examples/jsm/libs/stats.module.js';
+import { GUI } from '../../node_modules/three/examples/jsm/libs/dat.gui.module.js';
+import { WEBGL } from '../../node_modules/three/examples/jsm/WebGL.js';
 
 // THREE
-import * as THREE from './node_modules/three/build/three.module.js';
-import { OrbitControls } from './node_modules/three/examples/jsm/controls/OrbitControls.js';
-import { GLTFLoader } from './node_modules/three/examples/jsm/loaders/GLTFLoader.js';
+import * as THREE from '../../node_modules/three/build/three.module.js';
+import { OrbitControls } from '../../node_modules/three/examples/jsm/controls/OrbitControls.js';
+import { GLTFLoader } from '../../node_modules/three/examples/jsm/loaders/GLTFLoader.js';
 
 // POST PROCESSING
-import { EffectComposer } from './node_modules/three/examples/jsm/postprocessing/EffectComposer.js';
-import { RenderPass } from './node_modules/three/examples/jsm/postprocessing/RenderPass.js';
-import { FXAAShader } from './node_modules/three/examples/jsm/shaders/FXAAShader.js';
-import { ShaderPass } from "./node_modules/three/examples/jsm/postprocessing/ShaderPass.js";
-import { UnrealBloomPass } from './node_modules/three/examples/jsm/postprocessing/UnrealBloomPass.js';
+import { EffectComposer } from '../../node_modules/three/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from '../../node_modules/three/examples/jsm/postprocessing/RenderPass.js';
+import { FXAAShader } from '../../node_modules/three/examples/jsm/shaders/FXAAShader.js';
+import { ShaderPass } from "../../node_modules/three/examples/jsm/postprocessing/ShaderPass.js";
+import { UnrealBloomPass } from '../../node_modules/three/examples/jsm/postprocessing/UnrealBloomPass.js';
 
 // MY FILES
 import { myChunks } from './Shaders.js';
@@ -136,7 +136,7 @@ let createStartingMesh = function(){
 
 let loadCharacter = function(){
 	
-	gltfLoader.load( 'character.glb' , function( gltf ){
+	gltfLoader.load( 'assets/models/character.glb' , function( gltf ){
 		
 		console.log( gltf );
 		character = gltf.scene;
@@ -374,6 +374,7 @@ let initControls = function(){
 
 let initTextures = function(){
 	
+	textureLoader.setPath('assets/textures/');
 	Textures.noise1 = textureLoader.load( 'noiseTexture.png' );
 	Textures.noise1.wrapS = THREE.RepeatWrapping;
 	Textures.noise1.wrapT = THREE.RepeatWrapping;
