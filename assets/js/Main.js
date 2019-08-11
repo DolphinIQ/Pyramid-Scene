@@ -11,6 +11,7 @@ import { WEBGL } from '../../node_modules/three/examples/jsm/WebGL.js';
 import * as THREE from '../../node_modules/three/build/three.module.js';
 import { OrbitControls } from '../../node_modules/three/examples/jsm/controls/OrbitControls.js';
 import { GLTFLoader } from '../../node_modules/three/examples/jsm/loaders/GLTFLoader.js';
+import { BufferGeometryUtils } from '../../node_modules/three/examples/jsm/utils/BufferGeometryUtils.js';
 
 // POST PROCESSING
 import { EffectComposer } from '../../node_modules/three/examples/jsm/postprocessing/EffectComposer.js';
@@ -34,7 +35,7 @@ let shadowSettings = {
 	ON: true,
 	bias: 0.0005,
 };
-let time = 0, floor, pyramid, pyramid2, character;
+let time = 0, floor, pyramid, character;
 let reflectionCamera, reflectionRenderTarget, reflectionRenderer, myPass;
 let floorSize = new THREE.Vector2( 50 , 50 );
 
@@ -272,6 +273,18 @@ let createFloor = function(){
 let createPyramid = function(){
 	
 	let pyramidGeo = new THREE.CylinderBufferGeometry( 3.5 , 0.2 , 4.5 , 4 );
+	let reflectedGeometry = pyramidGeo.clone();
+	
+	pyramidGeo.translate( 0 , 2.5 , 0 );
+	reflectedGeometry.rotateX( Math.PI ); // 180 deg
+	reflectedGeometry.translate( 0 , -2.5 , 0 );
+	
+	pyramidGeo = BufferGeometryUtils.mergeBufferGeometries([
+		pyramidGeo , reflectedGeometry
+	]);
+	// pyramidGeo.merge( reflectedGeometry );
+	console.log( pyramidGeo );
+	
 	let pyramidMat = new THREE.ShaderMaterial({ 
 		defines: {},
 		
@@ -297,16 +310,9 @@ let createPyramid = function(){
 	let normalMat = new THREE.MeshNormalMaterial({  });
 	
 	pyramid = new THREE.Mesh( pyramidGeo , pyramidMat );
-	pyramid.position.set( 2 , 2.5 , -8 );
+	pyramid.position.set( 2 , 0 , -8 );
 	pyramid.rotation.y += 55 * Math.PI/180;
 	scene0.add( pyramid );
-	
-	pyramid2 = new THREE.Mesh( pyramidGeo , pyramidMat );
-	pyramid2.position.set( 2 , -2.5 , -8 );
-	pyramid2.rotation.y -= 55 * Math.PI/180;
-	pyramid2.rotation.x += 180 * Math.PI/180;
-	scene0.add( pyramid2 );
-	
 	
 	/* let pyramidFolder = gui.addFolder( 'Pyramid' );
 	pyramidFolder.open();
@@ -515,8 +521,7 @@ function animate() {
 	time += 1/60;
 	if( floor.userData.shader ) floor.userData.shader.uniforms.uTime.value = time;
 	
-	pyramid.rotation.y += 0.0007; // 0.0005
-	pyramid2.rotation.y -= 0.0007;
+	pyramid.rotation.y += 0.007;
 	pyramid.material.uniforms.uTime.value = time;
 	
 	if( character instanceof THREE.Scene ) character.animationMixer.update( delta );
