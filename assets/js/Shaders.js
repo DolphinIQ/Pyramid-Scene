@@ -104,7 +104,7 @@ let myChunks = {
 			void main(){
 				vec2 uv = vUv;
 				uv.x *= 10.0;
-				uv.y = uv.y * 3.0 - uTime*0.2;
+				uv.y = uv.y * 3.0 + uTime*0.2;
 				
 				vec3 outputColor = diffuse;
 				
@@ -115,12 +115,9 @@ let myChunks = {
 				float emissionFactorPerlin = emissiveMapTexelToLinear( emissionNoisePerlin ).r;
 				
 				
-				float emissionFactor = mix( emissionFactorVoronoi , emissionFactorPerlin , uTxtMix + sin( uTime )*0.1 );
+				float emissionFactor = mix( emissionFactorVoronoi , emissionFactorPerlin , uTxtMix + sin( uTime*1.0 )*0.05 );
 				
 				emissionFactor = clamp( (emissionFactor - CR3min)/(CR3max - CR3min) , 0.0, 1.0 );
-				
-				// float wireframeEmission = abs( vUv.x*1.0 - 1.0 ) * 0.5;
-				// emissionFactor += wireframeEmission;
 				
 				outputColor += emissionFactor * emissive;
 				

@@ -1,5 +1,5 @@
 /* 
-THREE.js r106 
+THREE.js r107
 */
 
 // UTILITY
@@ -27,7 +27,7 @@ import { myChunks } from './Shaders.js';
 // Global Variables
 let canvas = document.getElementById("myCanvas");
 let camera0, scene0, renderer, composer, clock, stats, gui;
-let controls, mousePos = {}, camPos = new THREE.Vector3( 0 , 1.5 , 8 );
+let controls, mousePos = {}, camPos = new THREE.Vector3( 0 , 1.0 , 8 );
 let textureLoader, gltfLoader;
 let Textures = {};
 let Lights = [];
@@ -35,7 +35,7 @@ let shadowSettings = {
 	ON: true,
 	bias: 0.0005,
 };
-let time = 0, floor, pyramid, character;
+let time = 0, floor, pyramid, character, particles;
 let reflectionCamera, reflectionRenderTarget, reflectionRenderer, myPass;
 let floorSize = new THREE.Vector2( 50 , 50 );
 
@@ -60,7 +60,6 @@ function init() {
 	// Scene
 	scene0 = new THREE.Scene();
 	scene0.background = new THREE.Color( 0x050505 );
-	// scene0.fog = new THREE.FogExp2( 0x202020 , 0.025 );
 	scene0.fog = new THREE.Fog( 0x050505 , 15 , 30 );
 	
 	// Camera
@@ -101,52 +100,66 @@ function init() {
 	
 	setInterval( function(  ){
 		console.log( renderer.info.render.calls );
-	}, 1000/2 )
+	}, 1000/2 );
 }
 
 let createStartingMesh = function(){
 	
-	let cube = new THREE.Mesh( 
-		new THREE.BoxBufferGeometry( 0.8 , 1.8 , 0.8 ) , 
-		new THREE.MeshStandardMaterial({color: 0x202020 , roughness: 0.7 , metalness: 0, bumpMap: Textures.noise2 })
-	);
-	if(shadowSettings.ON) {
-		cube.castShadow = true;
-		cube.receiveShadow = true;
-	}
-	cube.position.set( 1.5 , 0.9 , 5 );
-	// scene0.add( cube );
-	
-	/* cube.material.onBeforeCompile = function(shader){
-		
-		shader.fragmentShader = shader.fragmentShader.replace( 
-			"gl_FragColor = vec4( outgoingLight, diffuseColor.a );" ,`
-			
-			float wireframeEmission = abs( vUv.x - 1.0 );
-			// float wireframeEmission = vUv.x/2.;
-			outgoingLight = vec3( wireframeEmission );
-			gl_FragColor = vec4( outgoingLight, diffuseColor.a );
-		`);
-	} */
-	
 	loadCharacter();
-	// setupReflectionRender();
 	createFloor();
 	createPyramid();
+	createParticles();
+	
+	gui.close();
+}
+
+let createParticles = function(){
+	
+	let particlesGeo = new THREE.BufferGeometry();
+	let posArr = [] , x,y,z;
+	let particlesSettings = {
+		count: 40,
+		radius: new THREE.Vector3( 6 , 7 , 6 ),
+		startPos: new THREE.Vector3( 2 , 2.5 , -8 ),
+	};
+	for( let i = 0; i < particlesSettings.count; i++ ){
+		x = Math.random() * particlesSettings.radius.x - particlesSettings.radius.x/2;
+		y = Math.random() * particlesSettings.radius.y - particlesSettings.radius.y/2;
+		z = Math.random() * particlesSettings.radius.z - particlesSettings.radius.z/2;
+		
+		posArr.push( x , y , z );
+	}
+	
+	posArr = new Float32Array( posArr );
+	particlesGeo.addAttribute( 'position' , new THREE.BufferAttribute( posArr , 3 ) );
+	
+	let particlesMat = new THREE.PointsMaterial({
+		map: Textures.particle,
+		// color: 0x008Ba0, // blue
+		color: 0xFF3300, // orange
+		alphaTest: 0.6,
+		blending: THREE.AdditiveBlending,
+		size: 0.4,
+	});
+	
+	particles = new THREE.Points( particlesGeo , particlesMat );
+	// particles.position.set( 2 , 2.5 , -8 ); // blue
+	particles.position.set( -12 , 1.5 , -3.0 ); // orange
+	scene0.add( particles );
 }
 
 let loadCharacter = function(){
 	
+	let characterFolder = gui.addFolder( "Character" );
+	
 	gltfLoader.load( 'assets/models/character.glb' , function( gltf ){
 		
-		console.log( gltf );
 		character = gltf.scene;
 		
-		character.position.set( 2.0 , -0.02 , 5.5 );
+		character.position.set( 1.7 , -0.02 , 5.5 );
 		character.rotation.y = 3.0; // 3.5
 		
 		if( shadowSettings.ON ){
-			// character.children[0].children[1]
 			character.children[0].children[1].castShadow = true;
 			character.children[0].children[1].receiveShadow = true;
 			renderer.shadowMap.needsUpdate = true;
@@ -159,11 +172,9 @@ let loadCharacter = function(){
 		character.animations.idle.play();
 		character.playingAnimation = true;
 		
-		
-		/* let characterFolder = gui.addFolder( "Character" );
 		characterFolder.open();
 		characterFolder.add( character.position , "x" , -10 , 10 , 0.1 );
-		characterFolder.add( character.position , "y" , -1 , 1 , 0.01 ).onChange( function(){ renderer.shadowMap.needsUpdate = true; } );
+		/* characterFolder.add( character.position , "y" , -1 , 1 , 0.01 ).onChange( function(){ renderer.shadowMap.needsUpdate = true; } );
 		characterFolder.add( character.position , "z" , -5 , 15 , 0.1 );
 		characterFolder.add( character.scale , "x" , 0 , 3 , 0.1 );
 		characterFolder.add( character.scale , "y" , 0 , 3 , 0.1 );
@@ -173,21 +184,18 @@ let loadCharacter = function(){
 			if( v == true ) character.animations.idle.play();
 			else character.animations.idle.stop();
 		}); */
+		characterFolder.add( character , "visible" );
 		
 		scene0.add( character );
+		character.torus = new THREE.Mesh(
+			new THREE.TorusBufferGeometry( 0.7 , 0.03 , 2 , 10 ),
+			new THREE.MeshBasicMaterial({ color: 0xFF3310 })
+		);
+		character.torus.rotation.x = 90 * Math.PI/180;
+		character.torus.position.set( 0.0 , 0.03 , 0.2 );
+		character.add( character.torus );
 	} );
-}
-
-let setupReflectionRender = function(){		
 	
-	reflectionCamera = new THREE.OrthographicCamera( -floorSize.x/2, floorSize.x/2, floorSize.y/2, -floorSize.y/2, 0.0, 20 );
-	scene0.add( reflectionCamera );
-	reflectionCamera.rotation.x += 90 * Math.PI/180;
-	
-	reflectionRenderTarget = new THREE.WebGLRenderTarget( 256 , 256 , {} );
-	reflectionRenderTarget.texture.wrapS = THREE.RepeatWrapping;
-	reflectionRenderTarget.texture.wrapT = THREE.RepeatWrapping;
-	// console.log( reflectionRenderTarget );
 	
 }
 
@@ -197,12 +205,8 @@ let createFloor = function(){
 		new THREE.PlaneBufferGeometry( floorSize.x , floorSize.y ),
 		new THREE.MeshStandardMaterial({
 			color: 0x2642D9,
-			// color: 0x051680,
-			// roughness: 1.0,
 			metalness: 0.0,
-			// map: Textures.noise1,
 			bumpMap: Textures.noise2,
-			// depthWrite: false,
 			transparent: true,
 		})
 	);
@@ -220,8 +224,6 @@ let createFloor = function(){
 		shader.uniforms.CR2min = { value: 0.5 };
 		shader.uniforms.CR2max = { value: 0.9 };
 		shader.uniforms.uNoiseOpacity = { value: 0.1 };
-		
-		shader.uniforms.uReflectionRT = { value: null };
 		
 		gui.add( shader.uniforms.uNoiseOpacity, "value", 0.0, 1.0, 0.02 ).name("Noise Opacity");
 		/* let shaderFolder = gui.addFolder( 'Shader' );
@@ -248,14 +250,6 @@ let createFloor = function(){
 		` + shader.fragmentShader;
 		
 		shader.fragmentShader = shader.fragmentShader.replace( 
-			`vec4 diffuseColor = vec4( diffuse, opacity );`,`
-			
-			// vec4 reflectionTxt = texture2D( uReflectionRT , vUv * vec2( 1.0 , -1.0 ) );
-			vec4 diffuseColor = vec4( diffuse, opacity );
-			// vec4 diffuseColor = vec4( diffuse , opacity ) + reflectionTxt;
-		`);
-		
-		shader.fragmentShader = shader.fragmentShader.replace( 
 			`#include <roughnessmap_fragment>`,
 			myChunks.adjusted_roughnessmap_fragment
 		);
@@ -265,25 +259,23 @@ let createFloor = function(){
 			myChunks.adjusted_bumpmap_pars_fragment
 		);
 		
-		floor.userData.shader = shader;
+		// floor.userData.shader = shader;
 	}
 	
 }
 
 let createPyramid = function(){
 	
-	let pyramidGeo = new THREE.CylinderBufferGeometry( 3.5 , 0.2 , 4.5 , 4 );
+	let pyramidGeo = new THREE.ConeBufferGeometry( 3.5 , 4.5 , 4 );
 	let reflectedGeometry = pyramidGeo.clone();
 	
+	pyramidGeo.rotateX( Math.PI ); // 180 deg
 	pyramidGeo.translate( 0 , 2.5 , 0 );
-	reflectedGeometry.rotateX( Math.PI ); // 180 deg
 	reflectedGeometry.translate( 0 , -2.5 , 0 );
 	
 	pyramidGeo = BufferGeometryUtils.mergeBufferGeometries([
 		pyramidGeo , reflectedGeometry
-	]);
-	// pyramidGeo.merge( reflectedGeometry );
-	console.log( pyramidGeo );
+	]); 
 	
 	let pyramidMat = new THREE.ShaderMaterial({ 
 		defines: {},
@@ -296,7 +288,7 @@ let createPyramid = function(){
 			uNoiseVoronoi: { value: Textures.voronoi },
 			uNoisePerlin: { value: Textures.noise2 },
 			uTxtMix: { value: 0.5 },
-			emissive: { value: new THREE.Color( 0.0 , 0.9 , 1.0 ) },
+			emissive: { value: new THREE.Color( 0.0 , 0.7 , 0.8 ) }, // 0.7 , 0.85 
 			CR3min: { value: 0.4 },
 			CR3max: { value: 0.5 },
 		},
@@ -330,7 +322,6 @@ let createPyramid = function(){
 		blending: THREE.AdditiveBlending,
 		opacity: 0.15,
 		fog: false,
-		// lights: false,
 	}) );
 	glowEffect.scale.set( 50 , 50 , 1 );
 	scene0.add( glowEffect );
@@ -359,7 +350,7 @@ let initControls = function(){
 	
 	controls = {
 		speedScale: 0.1,
-		radius: new THREE.Vector2( 0.6 , 0.6 ),
+		radius: new THREE.Vector2( 0.3 , 0.3 ),
 		updateCamera: function( cam ){
 			if( mousePos.x != undefined && mousePos.y != undefined ){
 				let destinationX = camPos.x + mousePos.x * controls.radius.x;
@@ -381,9 +372,6 @@ let initControls = function(){
 let initTextures = function(){
 	
 	textureLoader.setPath('assets/textures/');
-	Textures.noise1 = textureLoader.load( 'noiseTexture.png' );
-	Textures.noise1.wrapS = THREE.RepeatWrapping;
-	Textures.noise1.wrapT = THREE.RepeatWrapping;
 	
 	Textures.noise2 = textureLoader.load( 'noiseTexture2.png' );
 	Textures.noise2.wrapS = THREE.RepeatWrapping;
@@ -397,10 +385,8 @@ let initTextures = function(){
 	Textures.voronoi.wrapS = THREE.RepeatWrapping;
 	Textures.voronoi.wrapT = THREE.RepeatWrapping;
 	
-	
-	Textures.glowOld = textureLoader.load( 'RoundSoftParticle.png' );
+	Textures.particle = textureLoader.load( 'corona.png' );
 	Textures.glow = textureLoader.load( 'RoundSoftParticleHalved.png' );
-	
 }
 
 let initPostProcessing = function(){
@@ -415,18 +401,17 @@ let initPostProcessing = function(){
 	// resolution, strength, radius, threshold
 	let unrealBloomPass = new UnrealBloomPass( 
 		new THREE.Vector2( 256 , 256 ),
-		4.5, 1.0 , 0.55
+		4.5, 1.0 , 0.40
 	);
 	// unrealBloomPass.enabled = false;
 	unrealBloomPass.exposure = 1.0;
 	
 	let bloomFolder = gui.addFolder( 'Bloom Pass' );
-	bloomFolder.open();
+	// bloomFolder.open();
 	bloomFolder.add( unrealBloomPass, 'exposure', 0.0, 2.0 , 0.1 )
 	.onChange( function ( value ) {
-		// renderer.toneMappingExposure = Math.pow( value, 4.0 );
-		renderer.toneMappingExposure = value;
-		console.log( renderer.toneMappingExposure );
+		renderer.toneMappingExposure = Math.pow( value, 4.0 );
+		// renderer.toneMappingExposure = value;
 	} );
 	bloomFolder.add( unrealBloomPass , 'strength' , 0.0 , 10.0 , 0.05 );
 	bloomFolder.add( unrealBloomPass , 'radius' , 0.0 , 1.0 , 0.01 );
@@ -441,43 +426,42 @@ let initPostProcessing = function(){
 }
 
 let initLights = function(){
-	Lights[0] = new THREE.AmbientLight( 0xffffff , 0.0 );
-	// Lights[0] = new THREE.DirectionalLight( 0xffffff , 0.8 );
-	// Lights[0].position.set( 1 , 2 , 2 );
 	
 	// PYRAMID LIGHT
-	Lights[1] = new THREE.PointLight( 0xaaeeff , 50 , 0 , 2 ); // int 13
-	Lights[1].position.set( 2 , 1.5 , -8 );
+	Lights[0] = new THREE.PointLight( 0xaaeeff , 50 , 0 , 2 ); // int 13
+	Lights[0].position.set( 2 , 1.5 , -8 );
 	if( shadowSettings.ON ){ 
-		Lights[1].castShadow = true;
-		Lights[1].shadow.bias = shadowSettings.bias;
+		Lights[0].castShadow = true;
+		Lights[0].shadow.bias = shadowSettings.bias;
 	}
 	
 	let pLightFolder = gui.addFolder( 'pLight' );
-	pLightFolder.add( Lights[1].position , 'x' , -10.0 , 10.0 , 0.1 );
-	pLightFolder.add( Lights[1].position , 'y' , -1.0 , 10.0 , 0.1 );
-	pLightFolder.add( Lights[1].position , 'z' , -10.0 , 10.0 , 0.1 );
-	pLightFolder.add( Lights[1] , 'intensity' , 0.0 , 100.0 , 0.5 );
-	pLightFolder.add( Lights[1] , 'distance' , 0.0 , 100.0 , 0.01 );
+	pLightFolder.add( Lights[0].position , 'x' , -10.0 , 10.0 , 0.1 );
+	pLightFolder.add( Lights[0].position , 'y' , -1.0 , 10.0 , 0.1 );
+	pLightFolder.add( Lights[0].position , 'z' , -10.0 , 10.0 , 0.1 );
+	pLightFolder.add( Lights[0] , 'intensity' , 0.0 , 100.0 , 0.5 );
+	pLightFolder.add( Lights[0] , 'distance' , 0.0 , 100.0 , 0.01 );
 	
 	// ORANGE LIGHT
-	Lights[2] = new THREE.PointLight( 0xFF2200 , 100 , 16 , 2 ); // 15.5 dist
-	Lights[2].position.set( -12 , 1.5 , -3.0 );
-	/* if( shadowSettings.ON ){ 
-		Lights[2].castShadow = true;
-		Lights[2].shadow.bias = shadowSettings.bias;
-	} */
-	let pHelper = new pLightHelper( 0xFF2200 , 90.0 );
+	Lights[1] = new THREE.PointLight( 0xFF2200 , 30 , 16.4 , 2 ); // 16.3 dist
+	Lights[1].position.set( -12 , 1.5 , -3.0 );
+	let pHelper = new THREE.Sprite( new THREE.SpriteMaterial({
+		map: Textures.glow,
+		color: 0xFF2200,
+		opacity: 0.7,
+		fog: false,
+	}) );
+	pHelper.scale.set( 1.0 + 90 , 1.0 + 90 );
 	pHelper.renderOrder = 0.1;
-	Lights[2].add( pHelper );
+	Lights[1].add( pHelper );
 	
 	let orangeLightFolder = gui.addFolder( 'OrangeLight' );
 	// orangeLightFolder.open();
-	orangeLightFolder.add( Lights[2].position , 'x' , -30.0 , 0.0 , 0.1 );
-	orangeLightFolder.add( Lights[2].position , 'y' , -1.0 , 10.0 , 0.1 );
-	orangeLightFolder.add( Lights[2].position , 'z' , -30.0 , 10.0 , 0.1 );
-	orangeLightFolder.add( Lights[2] , 'intensity' , 0.0 , 500.0 , 0.5 );
-	orangeLightFolder.add( Lights[2] , 'distance' , 0.0 , 30.0 , 0.01 );
+	orangeLightFolder.add( Lights[1].position , 'x' , -30.0 , 0.0 , 0.1 );
+	orangeLightFolder.add( Lights[1].position , 'y' , -1.0 , 10.0 , 0.1 );
+	orangeLightFolder.add( Lights[1].position , 'z' , -30.0 , 10.0 , 0.1 );
+	orangeLightFolder.add( Lights[1] , 'intensity' , 0.0 , 500.0 , 0.5 );
+	orangeLightFolder.add( Lights[1] , 'distance' , 0.0 , 30.0 , 0.01 );
 	
 	orangeLightFolder.add( pHelper.position , 'x' , -30.0 , 0.0 , 0.1 );
 	orangeLightFolder.add( pHelper.position , 'y' , -1.0 , 10.0 , 0.1 );
@@ -495,45 +479,28 @@ let initLights = function(){
 	}
 }
 
-function pLightHelper( color , radius ){
-	
-	let obj = new THREE.Sprite( new THREE.SpriteMaterial({
-		map: Textures.glow,
-		color: color,
-		opacity: 0.7,
-		fog: false,
-	}) );
-	obj.scale.set( 1.0 + radius , 1.0 + radius );
-	
-	return obj;
-}
-
-
 function animate() {
-	stats.begin();
+	// stats.begin();
 	renderer.info.reset();
 	requestAnimationFrame( animate );
-	
 	
 	controls.updateCamera( camera0 );
 	
 	let delta = clock.getDelta();
 	time += 1/60;
-	if( floor.userData.shader ) floor.userData.shader.uniforms.uTime.value = time;
 	
-	pyramid.rotation.y += 0.007;
+	pyramid.rotation.y += 0.0007;
 	pyramid.material.uniforms.uTime.value = time;
+	particles.rotation.y += 0.0002;
 	
-	if( character instanceof THREE.Scene ) character.animationMixer.update( delta );
-	
-	/* renderer.setRenderTarget( reflectionRenderTarget );
-	if( floor.userData.shader ) floor.userData.shader.uniforms.uReflectionRT.value = null;
-	renderer.render( scene0 , reflectionCamera );
-	if( floor.userData.shader ) floor.userData.shader.uniforms.uReflectionRT.value = reflectionRenderTarget.texture; */
-	
+	if( character instanceof THREE.Scene ) {
+		character.animationMixer.update( delta );
+		character.torus.rotation.z += 3.35;
+	}
 	
 	composer.render( scene0 , camera0 );
-	stats.end();
+	// stats.end();
+	stats.update();
 }
 
 if ( WEBGL.isWebGLAvailable() === false ) {
