@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 	<head>
+		<link rel="icon" href="favicon.ico">
 		<meta charset="utf-8">
 		<title> The Pyramid </title>
 		<style>
@@ -9,9 +10,53 @@
 				margin: 0;
 				overflow: hidden;
 			}
+			div{
+				box-sizing: border-box;
+			}
+			#loading-screen{
+				position: absolute;
+				z-index: 100;
+				top: 0;
+				left: 0;
+				width: 100vw;
+				height: 100vh;
+				background: #101010;
+				padding-top: 30vh;
+				user-select: none;
+			}
+			h2{
+				text-align: center;
+				margin-bottom: 20px;
+				font-size: 40px;
+				font-family: Monospace;
+				letter-spacing: 8px;
+				color: #22CCDD;
+				text-shadow: 0 0 20px #22DDFF;
+			}
+			.ld-bar-container{
+				position: relative;
+				margin: 0 auto;
+				width: 40vw;
+				height: 30px;
+				padding: 4px 4px;
+				border: 4px solid #22CCDD;
+			}
+			.ld-bar-progress{
+				width: 0%;
+				height: 13px;
+				background: #22DDFF;
+				box-shadow: 0 0 40px 6px #22CCDD;
+			}
 		</style>
 	</head>
 	<body>
+		<div id="loading-screen">
+			<h2> LOADING... </h2>
+			<div class="ld-bar-container">
+				<div class="ld-bar-progress"></div>
+			</div>
+		</div>
+		
 		<canvas id="myCanvas"></canvas>
 		
 		<script type="module" src="assets/js/Main.js"></script>

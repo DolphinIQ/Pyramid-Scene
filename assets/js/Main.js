@@ -88,6 +88,34 @@ function init() {
 		camera0.updateProjectionMatrix();
 	}, false);
 	
+	// LOADING
+	THREE.DefaultLoadingManager.onLoad = function ( ) {
+		console.log( 'Loading Complete!');
+		setTimeout( function(){ 
+			
+			let x = 1.0;
+			let fade = setInterval( function(){
+				x-= 1/30;
+				if( x <= 0.0 ){
+					clearInterval( fade );
+					document.getElementById('loading-screen').style.display = 'none';
+				}
+				document.getElementById('loading-screen').style.opacity = x;
+			}, 1000/30 );
+		}, 1000 );
+	};
+	
+	THREE.DefaultLoadingManager.onProgress = function ( url, itemsLoaded, itemsTotal ) {
+		let percent = (itemsLoaded/itemsTotal * 100).toString() + "%";
+		console.log( percent );
+		document.querySelector('.ld-bar-progress').style.width = percent;
+	};
+
+	THREE.DefaultLoadingManager.onError = function ( url ) {
+		console.log( 'There was an error loading ' + url );
+	};
+	
+	
 	// Inits
 	initControls();
 	initTextures();
