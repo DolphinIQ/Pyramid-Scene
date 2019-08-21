@@ -36,8 +36,8 @@ let shadowSettings = {
 	bias: 0.0005,
 };
 let time = 0, floor, pyramid, character, particles;
-let reflectionCamera, reflectionRenderTarget, reflectionRenderer, myPass;
 let floorSize = new THREE.Vector2( 50 , 50 );
+let guiFolders = {};
 
 
 function init() {
@@ -76,6 +76,12 @@ function init() {
 	//GUI
 	gui = new GUI();
 	// gui.add(object, property, [min], [max], [step])
+	guiFolders = {
+		floor: gui.addFolder("Floor"),
+		character: gui.addFolder("Character"),
+		postProcessing: gui.addFolder("Post Processing"),
+	};
+	guiFolders.bloomPass = guiFolders.postProcessing.addFolder("Bloom Pass"),
 	
 	// Loaders
 	textureLoader = new THREE.TextureLoader();
@@ -91,7 +97,7 @@ function init() {
 	// LOADING
 	THREE.DefaultLoadingManager.onLoad = function ( ) {
 		console.log( 'Loading Complete!');
-		setTimeout( function(){ 
+		setTimeout( function(){
 			
 			let x = 1.0;
 			let fade = setInterval( function(){
@@ -102,12 +108,12 @@ function init() {
 				}
 				document.getElementById('loading-screen').style.opacity = x;
 			}, 1000/30 );
-		}, 1000 );
+		}, 2000 );
 	};
 	
 	THREE.DefaultLoadingManager.onProgress = function ( url, itemsLoaded, itemsTotal ) {
 		let percent = (itemsLoaded/itemsTotal * 100).toString() + "%";
-		console.log( percent );
+		// console.log( percent );
 		document.querySelector('.ld-bar-progress').style.width = percent;
 	};
 
@@ -178,8 +184,6 @@ let createParticles = function(){
 
 let loadCharacter = function(){
 	
-	let characterFolder = gui.addFolder( "Character" );
-	
 	gltfLoader.load( 'assets/models/character.glb' , function( gltf ){
 		
 		character = gltf.scene;
@@ -200,19 +204,8 @@ let loadCharacter = function(){
 		character.animations.idle.play();
 		character.playingAnimation = true;
 		
-		characterFolder.open();
-		characterFolder.add( character.position , "x" , -10 , 10 , 0.1 );
-		/* characterFolder.add( character.position , "y" , -1 , 1 , 0.01 ).onChange( function(){ renderer.shadowMap.needsUpdate = true; } );
-		characterFolder.add( character.position , "z" , -5 , 15 , 0.1 );
-		characterFolder.add( character.scale , "x" , 0 , 3 , 0.1 );
-		characterFolder.add( character.scale , "y" , 0 , 3 , 0.1 );
-		characterFolder.add( character.scale , "z" , 0 , 3 , 0.1 );
-		characterFolder.add( character.rotation , "y" , 0 , 6.3 , 0.001 );
-		characterFolder.add( character, "playingAnimation" ).onChange( function(v){
-			if( v == true ) character.animations.idle.play();
-			else character.animations.idle.stop();
-		}); */
-		characterFolder.add( character , "visible" );
+		// guiFolders.character.open();
+		guiFolders.character.add( character , "visible" );
 		
 		scene0.add( character );
 		character.torus = new THREE.Mesh(
@@ -253,15 +246,13 @@ let createFloor = function(){
 		shader.uniforms.CR2max = { value: 0.9 };
 		shader.uniforms.uNoiseOpacity = { value: 0.1 };
 		
-		gui.add( shader.uniforms.uNoiseOpacity, "value", 0.0, 1.0, 0.02 ).name("Noise Opacity");
-		/* let shaderFolder = gui.addFolder( 'Shader' );
-		shaderFolder.open();
-		shaderFolder.add( shader.uniforms.CR1min, 'value', 0.0, 1.0, 0.02).name('CR1 min');
-		shaderFolder.add( shader.uniforms.CR1max, 'value', 0.0, 1.0, 0.02).name('CR1 max');
-		shaderFolder.add( shader.uniforms.CR2min, 'value', 0.0, 1.0, 0.02).name('CR2 min');
-		shaderFolder.add( shader.uniforms.CR2max, 'value', 0.0, 1.0, 0.02).name('CR2 max'); */
-		// shaderFolder.add( shader.uniforms.uvOffsetX, 'value', -2.0, 2.0, 0.02).name('uvX');
-		// shaderFolder.add( shader.uniforms.uvOffsetY, 'value', -2.0, 2.0, 0.02).name('uvY');
+		guiFolders.floor.open();
+		guiFolders.floor.add( shader.uniforms.uNoiseOpacity, "value", 0.0, 1.0, 0.02 ).name('"Water" Opacity');
+		
+		guiFolders.floor.add( shader.uniforms.CR1min, 'value', 0.0, 1.0, 0.02).name('CR1 min');
+		guiFolders.floor.add( shader.uniforms.CR1max, 'value', 0.0, 1.0, 0.02).name('CR1 max');
+		guiFolders.floor.add( shader.uniforms.CR2min, 'value', 0.0, 1.0, 0.02).name('CR2 min');
+		guiFolders.floor.add( shader.uniforms.CR2max, 'value', 0.0, 1.0, 0.02).name('CR2 max');
 		
 		
 		shader.fragmentShader = `
@@ -356,7 +347,7 @@ let createPyramid = function(){
 	glowEffect.position.set( 3.5 , 1.5 , -10 );
 	glowEffect.renderOrder = 0.1;
 	
-	let pyrGlowFolder = gui.addFolder( 'Pyramid Glow' );
+	/* let pyrGlowFolder = gui.addFolder( 'Pyramid Glow' );
 	// pyrGlowFolder.open();
 	pyrGlowFolder.add( glowEffect.position , 'x' , -2.0 , 20.0 , 0.1 );
 	pyrGlowFolder.add( glowEffect.position , 'y' , -1.0 , 10.0 , 0.1 );
@@ -364,7 +355,7 @@ let createPyramid = function(){
 	pyrGlowFolder.add( glowEffect.material , 'opacity' , 0.0 , 1.0 , 0.01 );
 	pyrGlowFolder.add( glowEffect.scale , 'x' , 10.0 , 200.0 , 0.1 ).name("scale").onChange( function( value ){
 		glowEffect.scale.set( value , value , value );
-	} );
+	} ); */
 	
 }
 
@@ -405,8 +396,8 @@ let initTextures = function(){
 	Textures.noise2.wrapS = THREE.RepeatWrapping;
 	Textures.noise2.wrapT = THREE.RepeatWrapping;
 	Textures.noise2.repeat.set( 1.85 , 2.12 ); // 2 2
-	gui.add( Textures.noise2.repeat, "x" , 0 , 16 , 0.01 );
-	gui.add( Textures.noise2.repeat, "y" , 0 , 16 , 0.01 );
+	guiFolders.floor.add( Textures.noise2.repeat, "x" , 0 , 16 , 0.01 ).name("Repeat X");
+	guiFolders.floor.add( Textures.noise2.repeat, "y" , 0 , 16 , 0.01 ).name("Repeat Y");
 	Textures.noise2.anisotropy = renderer.capabilities.getMaxAnisotropy();
 	
 	Textures.voronoi = textureLoader.load( 'voronoi.jpg' );
@@ -434,23 +425,23 @@ let initPostProcessing = function(){
 	// unrealBloomPass.enabled = false;
 	unrealBloomPass.exposure = 1.0;
 	
-	let bloomFolder = gui.addFolder( 'Bloom Pass' );
-	// bloomFolder.open();
-	bloomFolder.add( unrealBloomPass, 'exposure', 0.0, 2.0 , 0.1 )
+	guiFolders.postProcessing.open();
+	guiFolders.bloomPass.add( unrealBloomPass, 'exposure', 0.0, 2.0 , 0.1 )
 	.onChange( function ( value ) {
 		renderer.toneMappingExposure = Math.pow( value, 4.0 );
 		// renderer.toneMappingExposure = value;
 	} );
-	bloomFolder.add( unrealBloomPass , 'strength' , 0.0 , 10.0 , 0.05 );
-	bloomFolder.add( unrealBloomPass , 'radius' , 0.0 , 1.0 , 0.01 );
-	bloomFolder.add( unrealBloomPass , 'threshold' , 0.0 , 1.0 , 0.01 );
-	bloomFolder.add( unrealBloomPass , 'enabled' );
+	guiFolders.bloomPass.add( unrealBloomPass , 'strength' , 0.0 , 10.0 , 0.05 );
+	guiFolders.bloomPass.add( unrealBloomPass , 'radius' , 0.0 , 1.0 , 0.01 );
+	guiFolders.bloomPass.add( unrealBloomPass , 'threshold' , 0.0 , 1.0 , 0.01 );
+	guiFolders.bloomPass.add( unrealBloomPass , 'enabled' );
 	
 	composer.addPass( renderPass );
 	composer.addPass( unrealBloomPass );
 	composer.addPass( fxaaPass );
 	
-	gui.add( fxaaPass , 'enabled' ).name("FXAAPass");
+	
+	guiFolders.postProcessing.add( fxaaPass , 'enabled' ).name("FXAA Pass");
 }
 
 let initLights = function(){
@@ -463,12 +454,12 @@ let initLights = function(){
 		Lights[0].shadow.bias = shadowSettings.bias;
 	}
 	
-	let pLightFolder = gui.addFolder( 'pLight' );
+	/* let pLightFolder = gui.addFolder( 'pLight' );
 	pLightFolder.add( Lights[0].position , 'x' , -10.0 , 10.0 , 0.1 );
 	pLightFolder.add( Lights[0].position , 'y' , -1.0 , 10.0 , 0.1 );
 	pLightFolder.add( Lights[0].position , 'z' , -10.0 , 10.0 , 0.1 );
 	pLightFolder.add( Lights[0] , 'intensity' , 0.0 , 100.0 , 0.5 );
-	pLightFolder.add( Lights[0] , 'distance' , 0.0 , 100.0 , 0.01 );
+	pLightFolder.add( Lights[0] , 'distance' , 0.0 , 100.0 , 0.01 ); */
 	
 	// ORANGE LIGHT
 	Lights[1] = new THREE.PointLight( 0xFF2200 , 30 , 16.4 , 2 ); // 16.3 dist
@@ -483,7 +474,7 @@ let initLights = function(){
 	pHelper.renderOrder = 0.1;
 	Lights[1].add( pHelper );
 	
-	let orangeLightFolder = gui.addFolder( 'OrangeLight' );
+	/* let orangeLightFolder = gui.addFolder( 'OrangeLight' );
 	// orangeLightFolder.open();
 	orangeLightFolder.add( Lights[1].position , 'x' , -30.0 , 0.0 , 0.1 );
 	orangeLightFolder.add( Lights[1].position , 'y' , -1.0 , 10.0 , 0.1 );
@@ -497,7 +488,7 @@ let initLights = function(){
 	orangeLightFolder.add( pHelper.material , 'opacity' , 0.0 , 1.0 , 0.01 );
 	orangeLightFolder.add( pHelper.scale , 'x' , 10.0 , 200.0 , 0.1 ).name("scale").onChange( function( value ){
 		pHelper.scale.set( value , value , value );
-	} );
+	} ); */
 	
 	pHelper.position.set( -15.5 , 0.9 , -3.0 );
 	
