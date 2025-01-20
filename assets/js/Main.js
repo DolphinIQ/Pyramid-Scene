@@ -2,23 +2,41 @@
 THREE.js r107
 */
 
+// // UTILITY
+// import Stats from '../../node_modules/three/examples/jsm/libs/stats.module.js';
+// import { GUI } from '../../node_modules/three/examples/jsm/libs/dat.gui.module.js';
+// import { WEBGL } from '../../node_modules/three/examples/jsm/WebGL.js';
+
+// // THREE
+// import * as THREE from '../../node_modules/three/build/three.module.js';
+// import { OrbitControls } from '../../node_modules/three/examples/jsm/controls/OrbitControls.js';
+// import { GLTFLoader } from '../../node_modules/three/examples/jsm/loaders/GLTFLoader.js';
+// import { BufferGeometryUtils } from '../../node_modules/three/examples/jsm/utils/BufferGeometryUtils.js';
+
+// // POST PROCESSING
+// import { EffectComposer } from '../../node_modules/three/examples/jsm/postprocessing/EffectComposer.js';
+// import { RenderPass } from '../../node_modules/three/examples/jsm/postprocessing/RenderPass.js';
+// import { FXAAShader } from '../../node_modules/three/examples/jsm/shaders/FXAAShader.js';
+// import { ShaderPass } from "../../node_modules/three/examples/jsm/postprocessing/ShaderPass.js";
+// import { UnrealBloomPass } from '../../node_modules/three/examples/jsm/postprocessing/UnrealBloomPass.js';
+
 // UTILITY
-import Stats from '../../node_modules/three/examples/jsm/libs/stats.module.js';
-import { GUI } from '../../node_modules/three/examples/jsm/libs/dat.gui.module.js';
-import { WEBGL } from '../../node_modules/three/examples/jsm/WebGL.js';
+import Stats from './three/examples/jsm/libs/stats.module.js';
+import { GUI } from './three/examples/jsm/libs/dat.gui.module.js';
+import { WEBGL } from './three/examples/jsm/WebGL.js';
 
 // THREE
-import * as THREE from '../../node_modules/three/build/three.module.js';
-import { OrbitControls } from '../../node_modules/three/examples/jsm/controls/OrbitControls.js';
-import { GLTFLoader } from '../../node_modules/three/examples/jsm/loaders/GLTFLoader.js';
-import { BufferGeometryUtils } from '../../node_modules/three/examples/jsm/utils/BufferGeometryUtils.js';
+import * as THREE from './three/build/three.module.js';
+import { OrbitControls } from './three/examples/jsm/controls/OrbitControls.js';
+import { GLTFLoader } from './three/examples/jsm/loaders/GLTFLoader.js';
+import { BufferGeometryUtils } from './three/examples/jsm/utils/BufferGeometryUtils.js';
 
 // POST PROCESSING
-import { EffectComposer } from '../../node_modules/three/examples/jsm/postprocessing/EffectComposer.js';
-import { RenderPass } from '../../node_modules/three/examples/jsm/postprocessing/RenderPass.js';
-import { FXAAShader } from '../../node_modules/three/examples/jsm/shaders/FXAAShader.js';
-import { ShaderPass } from "../../node_modules/three/examples/jsm/postprocessing/ShaderPass.js";
-import { UnrealBloomPass } from '../../node_modules/three/examples/jsm/postprocessing/UnrealBloomPass.js';
+import { EffectComposer } from './three/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from './three/examples/jsm/postprocessing/RenderPass.js';
+import { FXAAShader } from './three/examples/jsm/shaders/FXAAShader.js';
+import { ShaderPass } from "./three/examples/jsm/postprocessing/ShaderPass.js";
+import { UnrealBloomPass } from './three/examples/jsm/postprocessing/UnrealBloomPass.js';
 
 // MY FILES
 import { myChunks } from './Shaders.js';
