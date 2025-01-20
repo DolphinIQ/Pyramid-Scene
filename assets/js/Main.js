@@ -346,17 +346,6 @@ let createPyramid = function(){
 	scene0.add( glowEffect );
 	glowEffect.position.set( 3.5 , 1.5 , -10 );
 	glowEffect.renderOrder = 0.1;
-	
-	/* let pyrGlowFolder = gui.addFolder( 'Pyramid Glow' );
-	// pyrGlowFolder.open();
-	pyrGlowFolder.add( glowEffect.position , 'x' , -2.0 , 20.0 , 0.1 );
-	pyrGlowFolder.add( glowEffect.position , 'y' , -1.0 , 10.0 , 0.1 );
-	pyrGlowFolder.add( glowEffect.position , 'z' , -40.0 , 10.0 , 0.1 );
-	pyrGlowFolder.add( glowEffect.material , 'opacity' , 0.0 , 1.0 , 0.01 );
-	pyrGlowFolder.add( glowEffect.scale , 'x' , 10.0 , 200.0 , 0.1 ).name("scale").onChange( function( value ){
-		glowEffect.scale.set( value , value , value );
-	} ); */
-	
 }
 
 let initControls = function(){
@@ -431,6 +420,7 @@ let initPostProcessing = function(){
 		renderer.toneMappingExposure = Math.pow( value, 4.0 );
 		// renderer.toneMappingExposure = value;
 	} );
+	guiFolders.bloomPass.open();
 	guiFolders.bloomPass.add( unrealBloomPass , 'strength' , 0.0 , 10.0 , 0.05 );
 	guiFolders.bloomPass.add( unrealBloomPass , 'radius' , 0.0 , 1.0 , 0.01 );
 	guiFolders.bloomPass.add( unrealBloomPass , 'threshold' , 0.0 , 1.0 , 0.01 );
